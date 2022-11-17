@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters import Text
 
 from config import TOKEN
-from keyboards import kb, kb_photo
+from keyboards import kb, kb_photo, ikb
 
 HELP_COMMAND = """
 <b>/help</b> - <em>список команд</em>
@@ -17,6 +17,7 @@ arr_photos = [
     'https://tlgrmx.ru/stickers/156/11.png',
     'https://i.pinimg.com/564x/f8/93/dc/f893dc70557f133a6dcd84d9e23c4b33.jpg',
 ]
+photos = dict(zip(arr_photos, ['angry', 'hungry', 'funny']))
 
 bot = Bot(TOKEN)
 dp = Dispatcher(bot)
@@ -24,6 +25,14 @@ dp = Dispatcher(bot)
 
 async def on_startup(_):
     print('I have been started.')
+
+
+async def send_random(message: types.message):
+    random_photo = random.choice(list(photos.keys()))
+    await bot.send_photo(chat_id=message.chat.id,
+                         photo=random_photo,
+                         caption=photos[random_photo],
+                         reply_markup=ikb)
 
 
 @dp.message_handler(Text(equals='Random photo'))
@@ -37,7 +46,7 @@ async def open_kb_photo(message: types.Message):
 
 @dp.message_handler(Text(equals='Рандом'))
 async def send_random_photo(message: types.Message):
-    await bot.send_photo(chat_id=message.chat.id, photo=random.choice(arr_photos))
+    await send_random(message)
 
 
 @dp.message_handler(Text(equals='Главное меню'))
@@ -69,6 +78,19 @@ async def cmd_description(message: types.Message):
         sticker='CAACAgIAAxkBAAEGaqFjcjrNjuFhJ9yvX3AV4y4kOjN_TgACSwAD4FP5CycQs-qvf8GBKwQ'
     )
     await message.delete()
+
+
+@dp.callback_query_handler()
+async def calback_random_photo(calback: types.CallbackQuery):
+    if calback.data == 'like':
+        await calback.answer('Вам понравилось!')
+        # await calback.message.answer('Вам понравилось!')
+    elif calback.data == 'dislike':
+        await calback.answer('Вам не понравилось!')
+        # await calback.message.answer('Вам не понравилось!')
+    else:
+        await send_random(message=calback.message)
+        await calback.answer()
 
 
 if __name__ == '__main__':
