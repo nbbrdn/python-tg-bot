@@ -22,5 +22,7 @@ ib2 = InlineKeyboardButton(text='👎',
                            callback_data='dislike')
 ib3 = InlineKeyboardButton(text='Следующая фотка',
                            callback_data='next')
+ib4 = InlineKeyboardButton(text='Главное меню',
+                           callback_data='main')
 
-ikb.add(ib1, ib2).add(ib3)
+ikb.add(ib1, ib2).add(ib3).add(ib4)

@@ -2,6 +2,7 @@ import random
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters import Text
+from aiogram.types import ReplyKeyboardRemove
 
 from config import TOKEN
 from keyboards import kb, kb_photo, ikb
@@ -18,6 +19,9 @@ arr_photos = [
     'https://i.pinimg.com/564x/f8/93/dc/f893dc70557f133a6dcd84d9e23c4b33.jpg',
 ]
 photos = dict(zip(arr_photos, ['angry', 'hungry', 'funny']))
+random_photo = random.choice(list(photos.keys()))
+
+flag = False
 
 bot = Bot(TOKEN)
 dp = Dispatcher(bot)
@@ -28,6 +32,7 @@ async def on_startup(_):
 
 
 async def send_random(message: types.message):
+    global random_photo
     random_photo = random.choice(list(photos.keys()))
     await bot.send_photo(chat_id=message.chat.id,
                          photo=random_photo,
@@ -37,16 +42,10 @@ async def send_random(message: types.message):
 
 @dp.message_handler(Text(equals='Random photo'))
 async def open_kb_photo(message: types.Message):
-    await message.answer(
-        text='Чтобы отправить рандомную фотографию - нажми на кнопку "Рандом"',
-        reply_markup=kb_photo
-    )
-    await message.delete()
-
-
-@dp.message_handler(Text(equals='Рандом'))
-async def send_random_photo(message: types.Message):
+    await message.answer(text='Рандомная фотка!',
+                         reply_markup=ReplyKeyboardRemove())
     await send_random(message)
+    await message.delete()
 
 
 @dp.message_handler(Text(equals='Главное меню'))
@@ -82,14 +81,31 @@ async def cmd_description(message: types.Message):
 
 @dp.callback_query_handler()
 async def calback_random_photo(calback: types.CallbackQuery):
+    global random_photo  # ! нежелательно использование глобальных переменных
+    global flag
+
     if calback.data == 'like':
-        await calback.answer('Вам понравилось!')
+        if not flag:
+            await calback.answer('Вам понравилось!')
+            flag = not flag
+        else:
+            await calback.answer('Вы уже лайкнули!')
         # await calback.message.answer('Вам понравилось!')
     elif calback.data == 'dislike':
         await calback.answer('Вам не понравилось!')
         # await calback.message.answer('Вам не понравилось!')
+    elif calback.data == 'main':
+        await calback.message.answer(text='Добро пожаловать в главное меню!',
+                                     reply_markup=kb)
+        await calback.message.delete()
+        await calback.answer()
     else:
-        await send_random(message=calback.message)
+        random_photo = random.choice(
+            list(filter(lambda x: x != random_photo, list(photos.keys()))))
+        await calback.message.edit_media(
+            types.InputMedia(media=random_photo, type='photo',
+                             caption=photos[random_photo]),
+            reply_markup=ikb)
         await calback.answer()
 
 
